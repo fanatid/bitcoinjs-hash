@@ -1,26 +1,30 @@
 'use strict'
-var bindings = require('../bindings')
-var browser = require('../browser')
-var node = require('../node')
+const bindings = require('../bindings')
+const browser = require('../browser')
+const node = require('../node')
+const createHash = require('./create-hash')
+const sprintf = require('sprintf-js').sprintf
 
-var INPUT = new Buffer(32)
+const INPUT = Buffer.allocUnsafe(32)
+const ITERATIONS = 2e5
 
 function measure (fn) {
-  var hrtime = process.hrtime()
-  for (var i = 0; i < 1e6; i++) fn(INPUT)
-  var diff = process.hrtime(hrtime)
-  return diff[0] * 1e9 + diff[1]
+  const hrtime = process.hrtime()
+  for (let i = 0; i < ITERATIONS; i++) fn(INPUT)
+  const diff = process.hrtime(hrtime)
+  return sprintf('%5.09fs', (diff[0] * 1e9 + diff[1]) / 1e9)
 }
 
 function run (alg) {
-  console.log(`benchmarking ${alg}, input size: ${INPUT.length} (lower is better)`)
+  console.log(`benchmarking ${alg}, input size: ${INPUT.length}, iterations: ${ITERATIONS} (lower is better)`)
   console.log('--------------------------------------------------')
-  console.log(`bindings: ${measure(bindings[alg])}`)
-  console.log(`browser:  ${measure(browser[alg])}`)
-  console.log(`node:     ${measure(node[alg])}`)
+  console.log(`bindings:            ${measure(bindings[alg])}`)
+  console.log(`browser:             ${measure(browser[alg])}`)
+  console.log(`node:                ${measure(node[alg])}`)
+  console.log(`create-hash/browser: ${measure(createHash[alg])}`)
   console.log('==================================================')
 }
 
-var argv2 = process.argv[2]
-var algs = argv2 ? [ argv2 ] : [ 'ripemd160', 'sha1', 'sha256', 'hash160', 'hash256' ]
+const argv2 = process.argv[2]
+const algs = argv2 ? [ argv2 ] : [ 'ripemd160', 'sha1', 'sha256', 'hash160', 'hash256' ]
 for (let alg of algs) run(alg)
